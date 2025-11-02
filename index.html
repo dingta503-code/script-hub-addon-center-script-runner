@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เว็บแจกสคริปต์ & ตัวรัน</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&display=swap');
+body {font-family:'Prompt',sans-serif; background:#0a0a0f; color:#fff; margin:0; padding:0;}
+.container{padding:20px;}
+h1,h2,h3{color:#ffcc00;}
+input,select,textarea,button{margin:4px 0; padding:6px; border-radius:6px; border:none;}
+button{cursor:pointer;}
+.card{background:#111; padding:10px; margin:10px 0; border-radius:8px;}
+img{max-width:100px; display:block; margin-bottom:6px;}
+.hidden{display:none;}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>เว็บแจกสคริปต์ & ตัวรัน</h1>
+
+<!-- LOGIN / REGISTER -->
+<div id="authSection">
+  <h2 id="authTitle">เข้าสู่ระบบ</h2>
+  <input id="loginUser" placeholder="ชื่อผู้ใช้">
+  <input id="loginPass" type="password" placeholder="รหัสผ่าน">
+  <button id="btnLogin">เข้าสู่ระบบ</button>
+  <hr>
+  <input id="regUser" placeholder="สมัครชื่อผู้ใช้">
+  <input id="regPass" type="password" placeholder="ตั้งรหัสผ่าน">
+  <button id="btnRegister">สมัครสมาชิก</button>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminSection" class="hidden">
+  <h2>หลังบ้านแอดมิน</h2>
+  
+  <h3>หมวดหมู่</h3>
+  <div id="categoryList"></div>
+  <input id="newCategory" placeholder="ชื่อหมวดหมู่ใหม่">
+  <button id="addCategory">เพิ่มหมวดหมู่</button>
+  
+  <h3>สคริปต์ / ตัวรัน</h3>
+  <select id="categorySelect"></select>
+  <input id="scriptName" placeholder="ชื่อสคริปต์/รัน">
+  <input id="scriptLink" placeholder="ลิงก์สคริปต์/รัน">
+  <input id="scriptImage" placeholder="ลิงก์ภาพ (URL)">
+  <textarea id="scriptDesc" placeholder="คำอธิบาย"></textarea>
+  <button id="addScript">เพิ่มสคริปต์</button>
+</div>
+
+<!-- USER VIEW -->
+<div id="userSection" class="hidden">
+  <h2>ค้นหาสคริปต์/ตัวรัน</h2>
+  <input id="searchInput" placeholder="ค้นหาด้วยชื่อ">
+  <div id="scriptDisplay"></div>
+</div>
+
+</div>
+
+<script>
+const CONFIG={
+  STORAGE_KEY:"sr_site_v2_data",
+  ADMIN:{username:"admin",password:"A9f!x7Kp#2Lq"}
+};
+let state={currentUser:null};
+let data=JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)||'{"categories":[],"scripts":[]}');
+
+function saveData(){localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(data));}
+
+// --- LOGIN / REGISTER ---
+document.getElementById('btnRegister').onclick=()=>{
+  const u=document.getElementById('regUser').value.trim();
+  const p=document.getElementById('regPass').value;
+  if(!u||!p){alert('กรอกชื่อและรหัสผ่าน'); return;}
+  let users=JSON.parse(localStorage.getItem('users')||'[]');
+  if(users.find(x=>x.username===u)){alert('ชื่อผู้ใช้นี้มีแล้ว'); return;}
+  users.push({username:u,password:p,isAdmin:false});
+  localStorage.setItem('users',JSON.stringify(users));
+  alert('สมัครเรียบร้อย ล็อกอินได้เลย');
+  document.getElementById('regUser').value='';
+  document.getElementById('regPass').value='';
+}
+document.getElementById('btnLogin').onclick=()=>{
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value;
+  if(!u||!p){alert('กรอกชื่อและรหัสผ่าน'); return;}
+  let users=JSON.parse(localStorage.getItem('users')||'[]');
+  // ensure admin
+  if(!users.find(x=>x.username===CONFIG.ADMIN.username)){
+    users.push({username:CONFIG.ADMIN.username,password:CONFIG.ADMIN.password,isAdmin:true});
+    localStorage.setItem('users',JSON.stringify(users));
+  }
+  const user=users.find(x=>x.username===u && x.password===p);
+  if(!user){alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'); return;}
+  state.currentUser=user;
+  document.getElementById('authSection').classList.add('hidden');
+  if(user.isAdmin){ document.getElementById('adminSection').classList.remove('hidden'); }
+  document.getElementById('userSection').classList.remove('hidden');
+  renderCategories();
+  renderScripts();
+  alert('เข้าสู่ระบบสำเร็จ!'+(user.isAdmin?" (Admin)":""));
+}
+
+// --- ADMIN FUNCTIONS ---
+function renderCategories(){
+  const list=document.getElementById('categoryList');
+  const select=document.getElementById('categorySelect');
+  list.innerHTML=''; select.innerHTML='';
+  data.categories.forEach((c,i)=>{
+    const div=document.createElement('div');
+    div.className='card';
+    if(state.currentUser.isAdmin){
+      div.innerHTML=`${c} <button onclick="deleteCategory(${i})">ลบ</button>`;
+    } else { div.innerHTML=c; }
+    list.appendChild(div);
+    const opt=document.createElement('option'); opt.value=c; opt.text=c;
+    select.appendChild(opt);
+  });
+}
+function renderScripts(filter=''){
+  const display=document.getElementById('scriptDisplay');
+  display.innerHTML='';
+  data.scripts.filter(s=>s.name.toLowerCase().includes(filter.toLowerCase())).forEach((s,i)=>{
+    const div=document.createElement('div'); div.className='card';
+    div.innerHTML=`
+      <h4>[${s.category}] ${s.name}</h4>
+      ${s.image?`<img src="${s.image}">`:''}
+      <p>${s.desc}</p>
+      <a href="${s.link}" target="_blank">ลิงก์</a>
+      ${state.currentUser.isAdmin?`<button onclick="deleteScript(${i})">ลบ</button>`:''}
+    `;
+    display.appendChild(div);
+  });
+}
+
+document.getElementById('addCategory').onclick=()=>{
+  const name=document.getElementById('newCategory').value.trim();
+  if(name && !data.categories.includes(name)){
+    data.categories.push(name); saveData(); renderCategories();
+    document.getElementById('newCategory').value='';
+  }
+}
+document.getElementById('addScript').onclick=()=>{
+  const name=document.getElementById('scriptName').value.trim();
+  const link=document.getElementById('scriptLink').value.trim();
+  const category=document.getElementById('categorySelect').value;
+  const image=document.getElementById('scriptImage').value.trim();
+  const desc=document.getElementById('scriptDesc').value.trim();
+  if(name && link && category){
+    data.scripts.push({name,link,category,image,desc});
+    saveData(); renderScripts();
+    document.getElementById('scriptName').value='';
+    document.getElementById('scriptLink').value='';
+    document.getElementById('scriptImage').value='';
+    document.getElementById('scriptDesc').value='';
+  }
+}
+function deleteCategory(i){
+  const cat=data.categories[i];
+  data.categories.splice(i,1);
+  data.scripts=data.scripts.filter(s=>s.category!==cat);
+  saveData(); renderCategories(); renderScripts();
+}
+function deleteScript(i){ data.scripts.splice(i,1); saveData(); renderScripts(); }
+
+// --- SEARCH ---
+document.getElementById('searchInput').addEventListener('input',e=>{
+  renderScripts(e.target.value);
+});
+
+</script>
+</body>
+</html>
