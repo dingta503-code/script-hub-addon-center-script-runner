@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>เว็บแจกสคริปต์ & ตัวรัน</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f0f10;
+  --card:#171717;
+  --muted:#bdbdbd;
+  --accent:#00bcd4;
+  --border:#262626;
+}
+body{margin:0;font-family:'Prompt',sans-serif;background:var(--bg);color:#eaeaea;}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;}
+header .brand{font-weight:600;font-size:1.2rem;cursor:pointer;}
+button{cursor:pointer;font-family:'Prompt',sans-serif;}
+.hidden{display:none;}
+.btn{padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:#161616;color:inherit;}
+.btn.primary{background:var(--accent);color:#061011;border:none;}
+.btn.logout{position:absolute;top:12px;right:16px;background:#ff4c4c;border:none;color:white;font-weight:600;}
+nav.side{position:fixed;left:0;top:56px;bottom:0;width:260px;background:linear-gradient(180deg,var(--card),#111);border-right:1px solid var(--border);padding:14px;transform:translateX(-280px);transition:transform .25s ease;overflow:auto;z-index:40;}
+nav.side.open{transform:translateX(0)}
+nav.side button, nav.side a{display:block;width:100%;text-align:left;padding:10px;border-radius:6px;border:none;background:none;color:inherit;text-decoration:none;margin-bottom:6px;}
+nav.side button:hover, nav.side a:hover{background:#202020}
+nav.side h4{margin-top:0;margin-bottom:12px;font-size:1.1rem;font-weight:600;color:var(--accent);}
+main{padding:20px;max-width:1100px;margin:0 auto;transition:margin-left .25s ease;}
+@media(min-width:721px){main { margin-left:260px; }}
+.topbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+input[type="text"],input[type="password"],input[type="search"]{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#0b0b0b;color:inherit;}
+#grid,#gridRunners{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.card{background:linear-gradient(180deg,#161616,#0f0f10);border:1px solid var(--border);padding:12px;border-radius:10px;text-align:center;position:relative;}
+.card h4{margin:6px 0 6px;font-size:1rem;word-break:break-word;}
+.card p{margin:0;font-size:0.9rem;color:var(--muted);word-break:break-word;}
+.card textarea{resize:none;font-family:'Prompt',sans-serif;width:100%;height:80px;background:#0b0b0b;color:#eaeaea;border-radius:6px;margin-top:6px;padding:6px;}
+.actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+.authBox{max-width:420px;margin:48px auto;padding:18px;background:var(--card);border:1px solid var(--border);border-radius:12px}
+.muted{color:var(--muted);font-size:0.9rem}
+.adminGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+.small{font-size:0.9rem;padding:8px;border-radius:8px;border:1px solid var(--border);background:#0b0b0b;color:inherit}
+.notice{padding:8px;border-radius:8px;background:#0d2a2e;border:1px solid #08363a;color:#bfeef4;margin-bottom:12px}
+@media(max-width:720px){
+  nav.side{width:100%;transform:translateX(-100%);}
+  nav.side.open{transform:translateX(0);}
+  .adminGrid{grid-template-columns:1fr}
+  main{margin-left:0;padding:16px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">เว็บแจกสคริปต์ & ตัวรัน</div>
+  <button class="btn logout hidden" id="btnLogout">ออกจากระบบ</button>
+</header>
+
+<nav class="side" id="sideNav" aria-hidden="true">
+  <h4>เมนู</h4>
+  <button onclick="showSection('scriptsPage')">🧾 สคริปต์</button>
+  <button onclick="showSection('runnersPage')">⚙️ ตัวรัน</button>
+  <button onclick="showSection('contactPage')">📞 ติดต่อ</button>
+  <hr>
+  <div id="adminSection" class="hidden">
+    <h4>หลังบ้าน (Admin)</h4>
+    <button onclick="showSection('adminPage')">🔧 จัดการสคริปต์ & ตัวรัน</button>
+  </div>
+</nav>
+
+<main>
+  <!-- AUTH -->
+  <div id="authWrap">
+    <div class="authBox" id="loginBox">
+      <h3>เข้าสู่ระบบ</h3>
+      <input id="inUsername" type="text" placeholder="ชื่อผู้ใช้">
+      <input id="inPassword" type="password" placeholder="รหัสผ่าน">
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button class="btn primary" id="btnLogin">เข้าสู่ระบบ</button>
+        <button class="btn" id="btnShowRegister">สมัครใหม่</button>
+      </div>
+      <div class="muted" id="authMsg"></div>
+    </div>
+
+    <div class="authBox hidden" id="registerBox">
+      <h3>สมัครสมาชิก</h3>
+      <input id="regUsername" type="text" placeholder="ตั้งชื่อผู้ใช้">
+      <input id="regPassword" type="password" placeholder="รหัสผ่าน">
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button class="btn primary" id="btnRegister">สมัครและเข้าสู่ระบบ</button>
+        <button class="btn" id="btnShowLogin">ย้อนกลับ</button>
+      </div>
+      <div class="muted" id="regMsg"></div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <section id="scriptsPage" class="hidden">
+    <div class="topbar">
+      <input id="searchInput" type="search" placeholder="ค้นหาชื่อ">
+      <button class="btn" onclick="applySearch()">ค้นหา</button>
+    </div>
+    <div id="grid"></div>
+  </section>
+
+  <section id="runnersPage" class="hidden">
+    <div id="gridRunners"></div>
+  </section>
+
+  <section id="contactPage" class="hidden">
+    <div class="card" style="max-width:700px;margin:0 auto">
+      <h3>ติดต่อแอดมิน</h3>
+      <p class="muted">ติดต่อผ่าน Discord หรือช่องทางที่แอดมินแจ้งไว้</p>
+      <a href="https://discord.gg/rtfpN9pT35" target="_blank" class="btn" style="margin-top:10px">เข้ากลุ่ม Discord</a>
+    </div>
+  </section>
+
+  <section id="adminPage" class="hidden">
+    <div class="card" style="max-width:960px;margin:0 auto">
+      <h3>Admin Panel</h3>
+      <div class="notice">เฉพาะบัญชีแอดมินเท่านั้น</div>
+      <h4>เพิ่มสคริปต์</h4>
+      <div class="adminGrid">
+        <input id="a_scriptName" class="small" placeholder="ชื่อสคริปต์">
+        <input id="a_scriptDesc" class="small" placeholder="คำอธิบาย">
+        <button class="btn primary" onclick="adminAddScript()">เพิ่ม</button>
+      </div>
+      <h4 style="margin-top:12px">เพิ่มตัวรัน</h4>
+      <div class="adminGrid">
+        <input id="a_runnerName" class="small" placeholder="ชื่อตัวรัน">
+        <input id="a_runnerFile" class="small" placeholder="URL ไฟล์/ดาวน์โหลด">
+        <button class="btn primary" onclick="adminAddRunner()">เพิ่ม</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ----- INIT ----- */
+if(!localStorage.getItem('users')){
+  localStorage.setItem('users',JSON.stringify([{username:'adminroot',password:'Root@2025',role:'admin'}]));
+  localStorage.setItem('siteData',JSON.stringify({scripts:[],runners:[]}));
+}
+let users=JSON.parse(localStorage.getItem('users'));
+let currentUser=JSON.parse(localStorage.getItem('currentUser'))||null;
+let siteData=JSON.parse(localStorage.getItem('siteData'));
+
+const authWrap=document.getElementById('authWrap');
+const loginBox=document.getElementById('loginBox');
+const registerBox=document.getElementById('registerBox');
+const btnLogout=document.getElementById('btnLogout');
+const adminSection=document.getElementById('adminSection');
+
+function saveAll(){
+  localStorage.setItem('users',JSON.stringify(users));
+  localStorage.setItem('currentUser',JSON.stringify(currentUser));
+  localStorage.setItem('siteData',JSON.stringify(siteData));
+}
+
+function showSection(pageId){
+  ['scriptsPage','runnersPage','contactPage','adminPage'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById(pageId).classList.remove('hidden');
+}
+
+function renderScripts(){
+  const grid=document.getElementById('grid'); grid.innerHTML='';
+  siteData.scripts.forEach(s=>{
+    const card=document.createElement('div'); card.className='card';
+    card.innerHTML=`<h4>${s.name}</h4><p class="muted">${s.desc}</p>
+      <textarea readonly>${s.code}</textarea>
+      <div class="actions">
+        <button class="btn" onclick="copyCode(${s.id})">คัดลอกสคริปต์</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function renderRunners(){
+  const grid=document.getElementById('gridRunners'); grid.innerHTML='';
+  siteData.runners.forEach(r=>{
+    const card=document.createElement('div'); card.className='card';
+    card.innerHTML=`<h4>${r.name}</h4>
+      <div class="actions">
+        <a class="btn" href="${r.file}" target="_blank">ดาวน์โหลดตัวรัน</a>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function copyCode(id){
+  const code=siteData.scripts.find(s=>s.id===id).code;
+  navigator.clipboard.writeText(code);
+  alert('คัดลอกสคริปต์เรียบร้อย!');
+}
+
+/* LOGIN / REGISTER */
+document.getElementById('btnLogin').onclick=()=>{
+  const u=document.getElementById('inUsername').value.trim();
+  const p=document.getElementById('inPassword').value;
+  const msg=document.getElementById('authMsg'); msg.textContent='';
+  if(!u||!p){msg.textContent='กรอกให้ครบทุกช่อง'; return;}
+  const user=users.find(x=>x.username===u && x.password===p);
+  if(!user){msg.textContent='ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'; return;}
+  currentUser={username:user.username,role:user.role}; saveAll();
+  authWrap.classList.add('hidden'); btnLogout.classList.remove('hidden');
+  adminSection.classList.toggle('hidden',user.role!=='admin');
+  showSection('scriptsPage');
+};
+
+document.getElementById('btnShowRegister').onclick=()=>{
+  loginBox.classList.add('hidden'); registerBox.classList.remove('hidden');
+};
+document.getElementById('btnShowLogin').onclick=()=>{
+  registerBox.classList.add('hidden'); loginBox.classList.remove('hidden');
+};
+document.getElementById('btnRegister').onclick=()=>{
+  const u=document.getElementById('regUsername').value.trim();
+  const p=document.getElementById('regPassword').value;
+  const msg=document.getElementById('regMsg'); msg.textContent='';
+  if(!u||!p){msg.textContent='กรอกให้ครบทุกช่อง'; return;}
+  if(users.some(x=>x.username.toLowerCase()===u.toLowerCase())){msg.textContent='ชื่อผู้ใช้นี้มีแล้ว'; return;}
+  users.push({username:u,password:p,role:'user'}); currentUser={username:u,role:'user'}; saveAll();
+  authWrap.classList.add('hidden'); btnLogout.classList.remove('hidden'); showSection('scriptsPage');
+};
+
+/* LOGOUT */
+btnLogout.onclick=()=>{
+  currentUser=null; saveAll(); authWrap.classList.remove('hidden');
+  btnLogout.classList.add('hidden'); adminSection.classList.add('hidden');
+  ['scriptsPage','runnersPage','contactPage','adminPage'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+};
+
+/* ADMIN FUNCTIONS */
+function adminAddScript(){
+  const name=document.getElementById('a_scriptName').value.trim();
+  const desc=document.getElementById('a_scriptDesc').value.trim();
+  if(!name||!desc){alert('กรอกครบทุกช่อง'); return;}
+  const id=Date.now();
+  siteData.scripts.push({id,name,desc,code:`// สคริปต์: ${name}\nconsole.log('Hello!')`});
+  saveAll(); renderScripts();
+  document.getElementById('a_scriptName').value=''; document.getElementById('a_scriptDesc').value='';
+}
+function adminAddRunner(){
+  const name=document.getElementById('a_runnerName').value.trim();
+  const file=document.getElementById('a_runnerFile').value.trim();
+  if(!name||!file){alert('กรอกครบทุกช่อง'); return;}
+  const id=Date.now();
+  siteData.runners.push({id,name,file}); saveAll(); renderRunners();
+  document.getElementById('a_runnerName').value=''; document.getElementById('a_runnerFile').value='';
+}
+
+/* SEARCH */
+function applySearch(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const grid=document.getElementById('grid'); grid.innerHTML='';
+  siteData.scripts.filter(s=>s.name.toLowerCase().includes(q)).forEach(s=>{
+    const card=document.createElement('div'); card.className='card';
+    card.innerHTML=`<h4>${s.name}</h4><p class="muted">${s.desc}</p>
+      <textarea readonly>${s.code}</textarea>
+      <div class="actions"><button class="btn" onclick="copyCode(${s.id})">คัดลอกสคริปต์</button></div>`;
+    grid.appendChild(card);
+  });
+}
+
+/* INITIAL RENDER */
+renderScripts(); renderRunners();
+</script>
+
+</body>
+</html>
