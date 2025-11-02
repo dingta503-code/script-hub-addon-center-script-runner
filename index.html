@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เว็บแจกสคริปต์ & ตัวรัน</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Prompt',sans-serif;}
+body{background:#0a0a0f;color:#fff;}
+header{padding:16px;background:#111;text-align:center;position:sticky;top:0;}
+h1,h2{color:#ffcc00;}
+.container{padding:20px;max-width:900px;margin:auto;}
+input[type=text],input[type=password]{width:100%;padding:10px;margin:10px 0;border-radius:8px;border:none;background:#222;color:#fff;}
+button{padding:6px 12px;border:none;border-radius:6px;cursor:pointer;background:#ffcc00;color:#000;margin-left:6px;transition:0.2s;}
+button:hover{background:#e6b800;}
+.authCard{background:rgba(20,25,35,0.95);border-radius:16px;padding:32px;width:100%;max-width:400px;box-shadow:0 15px 40px rgba(0,0,0,0.7);margin:auto;display:flex;flex-direction:column;gap:24px;}
+.authForm{display:flex;flex-direction:column;gap:12px;}
+.small{font-size:13px;color:#aaa;text-align:center;}
+.form-toggle{display:flex;justify-content:center;gap:12px;margin-bottom:12px;}
+.form-toggle button{background:transparent;border:none;color:#aaa;font-weight:600;cursor:pointer;padding:6px 12px;border-radius:8px;transition:0.3s;}
+.form-toggle button.active{background:#ffcc00;color:#000;}
+.category{margin-bottom:20px;}
+.category h3{color:#ffcc00;border-bottom:1px solid #ffcc00;padding-bottom:4px;display:flex;justify-content:space-between;align-items:center;}
+.item{padding:8px;margin:6px 0;background:#222;border-radius:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;}
+.item b{color:#fff;flex-basis:100%;}
+.item p{color:#aaa;margin:2px 0 0;flex:1;padding-left:10px;}
+.item button{margin-left:4px;margin-top:4px;}
+.contact-links{margin-top:20px;}
+.contact-links a{display:inline-block;padding:6px 12px;margin:4px;background:#ffcc00;color:#000;border-radius:6px;text-decoration:none;transition:0.2s;}
+.contact-links a:hover{background:#e6b800;}
+</style>
+</head>
+<body>
+
+<div id="mainContent">
+
+<!-- LOGIN / REGISTER -->
+<div class="authCard" id="authCard">
+<h2 id="authTitle">เข้าสู่ระบบ</h2>
+<div class="form-toggle">
+<button id="toggleLogin" class="active">ล็อกอิน</button>
+<button id="toggleRegister">สมัครสมาชิก</button>
+</div>
+
+<div id="loginForm" class="authForm">
+<input id="loginUser" type="text" placeholder="ชื่อผู้ใช้">
+<input id="loginPass" type="password" placeholder="รหัสผ่าน">
+<button id="btnLogin">เข้าสู่ระบบ</button>
+<div class="small">หากยังไม่มีบัญชีให้กด "สมัครสมาชิก"</div>
+</div>
+
+<div id="registerForm" class="authForm" style="display:none">
+<input id="regUser" type="text" placeholder="ตั้งชื่อผู้ใช้">
+<input id="regPass" type="password" placeholder="ตั้งรหัสผ่าน">
+<button id="btnRegister">สมัคร</button>
+<div class="small">บัญชีเก็บในเครื่อง — ล้างเบราว์เซอร์หายหมด</div>
+</div>
+</div>
+
+<!-- USER / ADMIN INTERFACE -->
+<div id="userInterface" style="display:none;">
+<header><h1>สคริปต์ & ตัวรัน</h1></header>
+<div class="container">
+<input type="text" id="searchInput" placeholder="ค้นหาชื่อสคริปต์/ตัวรัน...">
+<div id="categoryContainer"></div>
+
+<!-- CONTACT CATEGORY -->
+<div class="category">
+<h3>ติดต่อ</h3>
+<div class="contact-links">
+<a href="https://discord.gg/yourlink" target="_blank">Discord</a>
+<a href="mailto:admin@example.com">Email</a>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+
+<script>
+// CONFIG
+const CONFIG = {
+  STORAGE_KEY:"sr_site_v2_users",
+  ADMIN_CREDENTIALS:{username:"admin", password:"A9f!x7Kp#2Lq"}
+};
+
+// STATE
+let state={currentUser:null};
+
+// HELPERS
+const $=(s)=>document.querySelector(s);
+function loadUsers(){
+  const raw=localStorage.getItem(CONFIG.STORAGE_KEY);
+  let users=raw?JSON.parse(raw):[];
+  if(!users.find(u=>u.username===CONFIG.ADMIN_CREDENTIALS.username)){
+    users.push({username:CONFIG.ADMIN_CREDENTIALS.username,password:CONFIG.ADMIN_CREDENTIALS.password,isAdmin:true});
+    localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(users));
+  }
+  return users;
+}
+function saveUsers(users){localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(users));}
+
+// TOGGLE FORM
+$('#toggleLogin').onclick=()=>{$('#loginForm').style.display='flex';$('#registerForm').style.display='none';$('#toggleLogin').classList.add('active');$('#toggleRegister').classList.remove('active');}
+$('#toggleRegister').onclick=()=>{$('#loginForm').style.display='none';$('#registerForm').style.display='flex';$('#toggleLogin').classList.remove('active');$('#toggleRegister').classList.add('active');}
+
+// REGISTER
+$('#btnRegister').onclick=()=>{
+  const u=$('#regUser').value.trim(), p=$('#regPass').value;
+  if(!u||!p){alert('กรอกชื่อและรหัสผ่าน');return;}
+  const users=loadUsers();
+  if(users.find(x=>x.username===u)){alert('มีชื่อผู้ใช้นี้แล้ว');return;}
+  users.push({username:u,password:p,isAdmin:false});
+  saveUsers(users);
+  alert('สมัครเรียบร้อย ล็อกอินได้เลย');
+  $('#regUser').value='';$('#regPass').value='';
+  $('#toggleLogin').click();
+}
+
+// LOGIN
+$('#btnLogin').onclick=()=>{
+  const u=$('#loginUser').value.trim(), p=$('#loginPass').value;
+  if(!u||!p){alert('กรอกชื่อและรหัสผ่าน');return;}
+  const users=loadUsers();
+  const user=users.find(x=>x.username===u && x.password===p);
+  if(!user){alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');return;}
+  state.currentUser={username:user.username,isAdmin:!!user.isAdmin};
+  localStorage.setItem("currentUser",JSON.stringify(state.currentUser));
+  $('#authCard').style.display='none';
+  $('#userInterface').style.display='block';
+  initInterface();
+}
+
+// CATEGORIES
+let categories = JSON.parse(localStorage.getItem("categories")||`[
+  {"name":"สคริปต์","items":[{"name":"Script A","description":"คำอธิบาย Script A","copyText":"ข้อความ Script A สำหรับคัดลอก"}]},
+  {"name":"ตัวรัน","items":[{"name":"Runner X","description":"คำอธิบาย Runner X","copyText":"ข้อความ Runner X สำหรับคัดลอก","downloadLink":"https://example.com/runnerX.exe"}]}
+]`);
+function saveCategories(){localStorage.setItem("categories",JSON.stringify(categories));}
+
+// RENDER
+function renderCategories(catArray){
+  const container=$('#categoryContainer');
+  container.innerHTML='';
+  catArray.forEach((cat,ci)=>{
+    const div=document.createElement('div'); div.className='category';
+    let headerHTML = `<h3>${cat.name}`;
+    if(state.currentUser.isAdmin){
+      headerHTML += ` <button onclick="addItem(${ci})">เพิ่ม</button>`;
+    }
+    headerHTML += `</h3>`;
+    div.innerHTML=headerHTML;
+
+    cat.items.forEach((item,index)=>{
+      const itemDiv=document.createElement('div'); itemDiv.className='item';
+      itemDiv.innerHTML=`<b>${item.name}</b><p>${item.description}</p>`;
+
+      // ปุ่มคัดลอก
+      const copyBtn=document.createElement('button'); copyBtn.textContent='คัดลอกสคริปต์';
+      copyBtn.onclick=()=>{navigator.clipboard.writeText(item.copyText||item.name+"\n"+item.description);alert("คัดลอกเรียบร้อย");};
+      itemDiv.appendChild(copyBtn);
+
+      // ปุ่มดาวน์โหลด (เฉพาะตัวรัน)
+      if(cat.name==="ตัวรัน"){
+        const dlBtn=document.createElement('button'); dlBtn.textContent='ดาวน์โหลดตัวรัน';
+        dlBtn.onclick=()=>{ 
+          if(item.downloadLink){
+            window.open(item.downloadLink,"_blank");
+          } else { alert("ไม่มีลิงก์ดาวน์โหลด"); }
+        };
+        itemDiv.appendChild(dlBtn);
+      }
+
+      // Admin ลบ
+      if(state.currentUser.isAdmin){
+        const delBtn=document.createElement('button'); delBtn.textContent='ลบ';
+        delBtn.onclick=()=>{if(confirm("ลบรายการนี้?")){categories[ci].items.splice(index,1);saveCategories();renderCategories(categories);}};
+        itemDiv.appendChild(delBtn);
+      }
+
+      div.appendChild(itemDiv);
+    });
+    container.appendChild(div);
+  });
+}
+
+// ADD ITEM (ADMIN)
+function addItem(catIndex){
+  const name=prompt("ชื่อไอเทม:");
+  if(!name)return;
+  const desc=prompt("คำอธิบายไอเทม:");
+  const copyText=prompt("ข้อความสำหรับคัดลอก (ผู้ใช้กดปุ่มคัดลอกจะได้ข้อความนี้):");
+  let downloadLink="";
+  if(categories[catIndex].name==="ตัวรัน"){
+    downloadLink=prompt("ใส่ลิงก์ดาวน์โหลด (URL) สำหรับตัวรัน:");
+  }
+  categories[catIndex].items.push({name:name,description:desc,copyText:copyText,downloadLink:downloadLink});
+  saveCategories();
+  renderCategories(categories);
+}
+
+// SEARCH
+$('#searchInput').addEventListener('input', e=>{
+  const query=e.target.value.toLowerCase();
+  const filtered=categories.map(cat=>{
+    return {name:cat.name, items:cat.items.filter(i=>i.name.toLowerCase().includes(query))};
+  });
+  renderCategories(filtered);
+});
+
+// INIT
+function initInterface(){renderCategories(categories);}
+</script>
+</body>
+</html>
