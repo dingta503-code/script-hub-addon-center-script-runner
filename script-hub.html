@@ -1,0 +1,129 @@
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+
+export default function App() {
+  const adminUser = { username: 'admin', password: 'Nhub@2025!' };
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [items, setItems] = useState(JSON.parse(localStorage.getItem('items')) || []);
+  const [category, setCategory] = useState('script');
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [mode, setMode] = useState('copy');
+  const [image, setImage] = useState('');
+  const [discord, setDiscord] = useState(localStorage.getItem('discord') || '');
+  const [popupImage, setPopupImage] = useState(null);
+
+  const saveItems = (newItems) => {
+    setItems(newItems);
+    localStorage.setItem('items', JSON.stringify(newItems));
+  };
+
+  const handleLogin = () => {
+    if (username === adminUser.username && password === adminUser.password) {
+      setLoggedIn(true);
+    } else {
+      alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+    }
+  };
+
+  const handleAdd = () => {
+    if (!title.trim()) return alert('กรุณาใส่ชื่อ');
+    const newItem = { id: Date.now(), category, title, content, mode, image };
+    const newItems = [...items, newItem];
+    saveItems(newItems);
+    setTitle('');
+    setContent('');
+    setImage('');
+  };
+
+  const handleDelete = (id) => {
+    const newItems = items.filter((item) => item.id !== id);
+    saveItems(newItems);
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setImage(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const filtered = (cat) => items.filter((i) => i.category === cat);
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white p-6">
+      <motion.h1 className="text-3xl font-bold text-center mb-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        🎯 N.HUB SCRIPT CENTER
+      </motion.h1>
+
+      {!loggedIn ? (
+        <div className="max-w-md mx-auto bg-gray-800 p-4 rounded-2xl shadow-lg">
+          <h2 className="text-xl mb-4 text-center">เข้าสู่ระบบแอดมิน</h2>
+          <input className="w-full p-2 mb-3 text-black rounded" placeholder="ชื่อผู้ใช้" value={username} onChange={(e) => setUsername(e.target.value)} />
+          <input type="password" className="w-full p-2 mb-3 text-black rounded" placeholder="รหัสผ่าน" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <button onClick={handleLogin} className="bg-blue-600 w-full py-2 rounded hover:bg-blue-700">เข้าสู่ระบบ</button>
+        </div>
+      ) : (
+        <>
+          <div className="max-w-2xl mx-auto bg-gray-800 p-4 rounded-2xl mb-8">
+            <h2 className="text-lg font-bold mb-2">เพิ่มสคริปต์ / ตัวรัน</h2>
+            <select className="text-black w-full p-2 mb-2 rounded" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <option value="script">สคริปต์</option>
+              <option value="runner">ตัวรัน</option>
+            </select>
+            <input className="text-black w-full p-2 mb-2 rounded" placeholder="ชื่อ" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <select className="text-black w-full p-2 mb-2 rounded" value={mode} onChange={(e) => setMode(e.target.value)}>
+              <option value="copy">คัดลอก</option>
+              <option value="download">ดาวน์โหลด</option>
+            </select>
+            <textarea className="text-black w-full p-2 mb-2 rounded" placeholder={mode === 'copy' ? 'วางสคริปต์ที่นี่' : 'วางลิงก์ดาวน์โหลดที่นี่'} value={content} onChange={(e) => setContent(e.target.value)} />
+            <input type="file" accept="image/*" className="w-full mb-3" onChange={handleImageUpload} />
+            {image && <img src={image} alt="preview" className="w-32 h-32 object-cover rounded mb-3" />}
+            <button onClick={handleAdd} className="bg-green-600 px-4 py-2 rounded hover:bg-green-700">เพิ่ม</button>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-4">
+            <Category title="สคริปต์" data={filtered('script')} onDelete={handleDelete} setPopupImage={setPopupImage} />
+            <Category title="ตัวรัน" data={filtered('runner')} onDelete={handleDelete} setPopupImage={setPopupImage} />
+          </div>
+
+          <div className="mt-10 text-center">
+            <input className="text-black p-2 rounded w-64" placeholder="ลิงก์ Discord ติดต่อ" value={discord} onChange={(e) => { setDiscord(e.target.value); localStorage.setItem('discord', e.target.value); }} />
+          </div>
+        </>
+      )}
+
+      {popupImage && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setPopupImage(null)}>
+          <img src={popupImage} alt="popup" className="max-h-[90vh] rounded-lg shadow-lg" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Category({ title, data, onDelete, setPopupImage }) {
+  return (
+    <div className="bg-gray-800 p-4 rounded-2xl w-80 shadow-lg">
+      <h2 className="text-xl font-bold mb-4 text-center">{title}</h2>
+      {data.length === 0 && <p className="text-gray-400 text-center">ไม่มีข้อมูล</p>}
+      {data.map((item) => (
+        <div key={item.id} className="bg-gray-700 p-3 mb-3 rounded-xl">
+          {item.image && (
+            <img src={item.image} alt="item" className="w-full h-40 object-cover rounded mb-2 cursor-pointer" onClick={() => setPopupImage(item.image)} />
+          )}
+          <h3 className="font-bold">{item.title}</h3>
+          {item.mode === 'copy' ? (
+            <button onClick={() => navigator.clipboard.writeText(item.content)} className="bg-blue-600 px-3 py-1 mt-2 rounded hover:bg-blue-700">คัดลอก</button>
+          ) : (
+            <a href={item.content} target="_blank" rel="noreferrer" className="bg-green-600 px-3 py-1 mt-2 rounded inline-block hover:bg-green-700">ดาวน์โหลด</a>
+          )}
+          <button onClick={() => onDelete(item.id)} className="bg-red-600 px-3 py-1 mt-2 ml-2 rounded hover:bg-red-700">ลบ</button>
+        </div>
+      ))}
+    </div>
+  );
+}
