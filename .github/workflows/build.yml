@@ -1,0 +1,31 @@
+name: Hyper! X Store CI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Theos
+        run: |
+          export THEOS=/Users/runner/theos
+          git clone --recursive https://github.com/theos/theos.git $THEOS
+          curl -LO https://github.com/theos/sdks/archive/master.zip
+          unzip master.zip -d $THEOS/sdks
+          mv $THEOS/sdks/sdks-master/* $THEOS/sdks
+          rm -rf $THEOS/sdks/sdks-master master.zip
+
+      - name: Build Dylib
+        run: |
+          export THEOS=/Users/runner/theos
+          make package
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: HyperXStore-Dylib
+          path: .theos/obj/*.dylib
