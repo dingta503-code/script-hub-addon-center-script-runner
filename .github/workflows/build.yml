@@ -18,11 +18,13 @@ jobs:
           unzip master.zip -d $THEOS/sdks
           mv $THEOS/sdks/sdks-master/* $THEOS/sdks
           rm -rf $THEOS/sdks/sdks-master master.zip
+          # ติดตั้ง ldid ป้องกัน Error 127
+          brew install ldid
 
       - name: Build Dylib
         run: |
           export THEOS=/Users/runner/theos
-          make package
+          make package FINALPACKAGE=1
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
